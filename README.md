@@ -20,7 +20,7 @@ Due to the racing condition, the only way we found to reproduce it was using cur
 5. Make a xhr call from the command line: ``curl -X POST http://localhost:9876/123/q1w2e3r4/xhr``. This will start the 5 seconds timer
 6. After receiving "o" response, and before 5 seconds pass, call it again and leave the connection open: `curl -X POST http://localhost:9876/123/q1w2e3r4/xhr`.
 7. The timer will trigger and call ``sockJSSocket.close();``. We will end up at *step 2* breakpoint.
-8. Close the curl connection by hiting ctrl+c and wait a few moments.
+8. Close the curl connection by hiting ctrl+c and wait a few seconds.
 9. Resume breakpoint and we will stop at *step 4* breakpoint.
 10. Resume breakpoint and we will stop at *step 3* breakpoint.
 11. Resume breakpoint and we should get a deadlock.
