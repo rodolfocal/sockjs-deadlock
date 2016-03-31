@@ -9,6 +9,8 @@ The project consists of a main() that deploys and starts 8 instances of a ``Vert
 When a ``sockJSSocket`` is created, a timer is set, which will fire after *5 seconds* and will close the ``sockJSSocket``.
 During this 5 seconds window, If a XHR request is made for that ``SockJSSession`` and the client closes this connection at the same moment the timer is closing the ``SockJSSession``, a deadlock may occur.
 
+If only **1 verticle** is deployed, than we **don't have any deadlock** because the timer and the code that handles the client clossing a connection runs on the same event loop.
+
 Due to the racing condition, the only way we found to reproduce it was using curl and an IDE with breakpoints. The steps are described below:
 
 **Reproducing**
@@ -24,7 +26,7 @@ Due to the racing condition, the only way we found to reproduce it was using cur
 9. Resume breakpoint and we will stop at *step 4* breakpoint.
 10. Resume breakpoint and we will stop at *step 3* breakpoint.
 11. Resume breakpoint and we should get a deadlock.
-
+12. If you could not reproduce it, please, try a couple more times starting from step 5 (with a new ``session_id`` in the uri).
 
 **Thoughts**
 
@@ -35,12 +37,23 @@ What seems to be happening is:
 * Later on, thread 2 calls ``SockJSSession.shutdown()`` (close handle callback for HttpServerResponse). ``SockJSSession.shutdown()`` is also a synchronized method on this ``sockJsSession`` object so it will not execute until thread 1 fully executes ``SockJSSession.close()``.
 * Later on, thread 1, still on ``SockJSSession.close()`` execution path, tries to call ``HttpServerResponseImpl.end(HttpServerResponseImpl.java:328)``, which also has a synchronized statement on ServerConnection conn.
 
+**Output**
+
+Connected to the target VM, address: '127.0.0.1:60400', transport: 'socket'  
+from main :vert.x-eventloop-thread-0  
+Got Websocket Server  
+from handler :vert.x-eventloop-thread-7 Verticle :rodolfocal.App@60a6639d  
+from timeout : vert.x-eventloop-thread-7 Verticle :rodolfocal.App@60a6639d  
+from context : vert.x-eventloop-thread-7 Verticle :rodolfocal.App@60a6639d  
+
 **Stacktrace**:
+
+After the output above (a similar one) we will have something like this:
 
 **thread 1**
 
 Mar 29, 2016 5:57:05 PM io.vertx.core.impl.BlockedThreadChecker
-WARNING: Thread Thread[vert.x-eventloop-thread-6,5,main] has been blocked for 265537 ms, time limit is 2000
+WARNING: Thread Thread[vert.x-eventloop-thread-7,5,main] has been blocked for 265537 ms, time limit is 2000
 io.vertx.core.VertxException: Thread blocked
 	at io.vertx.core.http.impl.HttpServerResponseImpl.end(HttpServerResponseImpl.java:328)
 	at io.vertx.ext.web.handler.sockjs.impl.XhrTransport$XhrPollingListener.close(XhrTransport.java:178)
@@ -59,6 +72,8 @@ io.vertx.core.VertxException: Thread blocked
 	at java.lang.Thread.run(Thread.java:745)
 	
 **thread 2**
+
+This is the other thread that handles the client closing the second XHR connection.
 
 Mar 29, 2016 5:57:05 PM io.vertx.core.impl.BlockedThreadChecker
 WARNING: Thread Thread[vert.x-eventloop-thread-4,5,main] has been blocked for 206740 ms, time limit is 2000
