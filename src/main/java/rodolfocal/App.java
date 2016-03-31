@@ -43,11 +43,11 @@ public class App extends AbstractVerticle {
         SockJSHandler sockJSHandler = SockJSHandler.create(vertx, new SockJSHandlerOptions());
         sockJSHandler.socketHandler( sockJSSocket -> {
             Context context = vertx.getOrCreateContext();
-            System.out.println("from handler :" + Thread.currentThread().getName());
+            System.out.println("from handler :" + Thread.currentThread().getName() + " Verticle :" + this.toString());
             vertx.setTimer(5000, tid -> {
-                System.out.println("from timeout : " + Thread.currentThread().getName());
+                System.out.println("from timeout : " + Thread.currentThread().getName() + " Verticle :" + this.toString());
                 context.runOnContext( v -> {
-                    System.out.println("from context : " + Thread.currentThread().getName());
+                    System.out.println("from context : " + Thread.currentThread().getName() + " Verticle :" + this.toString());
                     sockJSSocket.close();
                 });
             });
