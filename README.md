@@ -100,3 +100,7 @@ io.vertx.core.VertxException: Thread blocked
 	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:357)
 	at io.netty.util.concurrent.SingleThreadEventExecutor$2.run(SingleThreadEventExecutor.java:112)
 	at java.lang.Thread.run(Thread.java:745)
+
+**UPDATE**
+2017-03-05 
+https://github.com/eclipse/vert.x/tree/dont-call-http-server-close-handler-holding-locks seems to have fixed the issue. The changes should go live with version 3.4.0. See https://github.com/vert-x3/vertx-web/issues/344
